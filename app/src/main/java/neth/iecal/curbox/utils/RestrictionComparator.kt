@@ -147,9 +147,20 @@ object RestrictionComparator {
         return old.filter { it.isActive }.all { o ->
             val n = new.find { it.groupId == o.groupId } ?: return@all false
             n.isActive &&
-                n.packages.containsAll(o.packages) &&
+                grayscaleAppCoverageSameOrWider(o, n) &&
                 grayscaleTimeCoverageSameOrWider(o.timeConfig, n.timeConfig)
         }
+    }
+
+    // True when every app the old group grays out is still grayed out by the new one
+    private fun grayscaleAppCoverageSameOrWider(old: GrayscaleGroup, new: GrayscaleGroup): Boolean = when {
+        !old.isWhitelistMode && !new.isWhitelistMode -> new.packages.containsAll(old.packages)
+        // A whitelist grays out everything except its apps, so none of the old apps may be on it
+        !old.isWhitelistMode && new.isWhitelistMode -> new.packages.none { it in old.packages }
+        // Fewer apps in color is stricter
+        old.isWhitelistMode && new.isWhitelistMode -> old.packages.containsAll(new.packages)
+        // A normal group cannot cover every app, so leaving whitelist mode is always looser
+        else -> false
     }
 
     private fun grayscaleTimeCoverageSameOrWider(old: AppTimeConfig, new: AppTimeConfig): Boolean {

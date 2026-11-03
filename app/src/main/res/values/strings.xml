@@ -1687,6 +1687,10 @@
     <string name="group_details_keywords">%1$d Keywords • %2$s</string>
     <string name="group_details_keywords_only">%1$d Keywords</string>
     <string name="group_details_apps_only">%1$d Apps</string>
+    <string name="group_details_whitelist">All apps except %1$d</string>
+    <string name="grayscale_whitelist_mode">Whitelist mode</string>
+    <string name="grayscale_whitelist_mode_description">Selected apps stay in color. Every other app is grayscale, including the launcher and Settings.</string>
+    <string name="apps_to_keep_in_color">APPS TO KEEP IN COLOR</string>
     <string name="group_no_usage_left">No time left in this schedule</string>
     <string name="group_usage_left">%1$s left in this schedule</string>
     <string name="warning_show_on_each_open">Show this screen each time I open the selected apps</string>

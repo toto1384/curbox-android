@@ -85,7 +85,7 @@ class GrayScaleFilter : BaseBlocker() {
             for (group in grayscaleGroups) {
                 if (!group.isActive) continue
 
-                if (group.packages.contains(currentPackageName)) {
+                if (group.graysOut(currentPackageName)) {
                     val config = group.timeConfig
                     val intervals = if (config.isEveryday) {
                         config.everydayIntervals

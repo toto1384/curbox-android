@@ -38,7 +38,41 @@ class GrayscaleRestrictionComparatorTest {
         assertTrue(RestrictionComparator.grayscaleGroups(listOf(split), listOf(overnight)))
     }
 
+    @Test
+    fun whitelistGraysOutEverythingExceptSelectedApps() {
+        val whitelist = appsGroup(isWhitelistMode = true, "a")
+        assertFalse(whitelist.graysOut("a"))
+        assertTrue(whitelist.graysOut("com.android.systemui"))
+        assertTrue(appsGroup(isWhitelistMode = false, "a").graysOut("a"))
+    }
+
+    @Test
+    fun fewerAppsInColorIsStricter() {
+        val twoInColor = appsGroup(isWhitelistMode = true, "a", "b")
+        val oneInColor = appsGroup(isWhitelistMode = true, "a")
+        assertTrue(RestrictionComparator.grayscaleGroups(listOf(twoInColor), listOf(oneInColor)))
+        assertFalse(RestrictionComparator.grayscaleGroups(listOf(oneInColor), listOf(twoInColor)))
+    }
+
+    @Test
+    fun switchingToWhitelistIsStricterOnlyIfGrayedAppsStayGray() {
+        val grayAB = appsGroup(isWhitelistMode = false, "a", "b")
+        assertTrue(RestrictionComparator.grayscaleGroups(listOf(grayAB), listOf(appsGroup(isWhitelistMode = true, "c"))))
+        assertFalse(RestrictionComparator.grayscaleGroups(listOf(grayAB), listOf(appsGroup(isWhitelistMode = true, "a"))))
+    }
+
+    @Test
+    fun leavingWhitelistModeIsLooser() {
+        val whitelist = appsGroup(isWhitelistMode = true)
+        val manyApps = appsGroup(isWhitelistMode = false, "a", "b", "c")
+        assertFalse(RestrictionComparator.grayscaleGroups(listOf(whitelist), listOf(manyApps)))
+    }
+
     private fun group(schedule: AppTimeConfig) = GrayscaleGroup(
         groupId = "group", isActive = true, timeConfig = schedule
+    )
+
+    private fun appsGroup(isWhitelistMode: Boolean, vararg packages: String) = GrayscaleGroup(
+        groupId = "group", isActive = true, packages = hashSetOf(*packages), isWhitelistMode = isWhitelistMode
     )
 }

@@ -66,6 +66,13 @@ class CreateGrayscaleGroupFragment : Fragment() {
         val groupId = requireActivity().intent.getStringExtra("group_id") ?: arguments?.getString("group_id")
         val prefillPackage = requireActivity().intent.getStringExtra("prefill_package")
 
+        // In whitelist mode the selected apps are the ones that keep their color
+        binding.switchWhitelistMode.setOnCheckedChangeListener { _, isChecked ->
+            binding.tvAppsLabel.text = getString(
+                if (isChecked) R.string.apps_to_keep_in_color else R.string.apps_to_greyscale
+            )
+        }
+
         if (groupId == null && !isPrefilled && prefillPackage != null) {
             isPrefilled = true
             selectedApps = arrayListOf(prefillPackage)
@@ -92,6 +99,7 @@ class CreateGrayscaleGroupFragment : Fragment() {
                         binding.etGroupName.setText(group.groupName)
                         selectedApps = ArrayList(group.packages.toList())
                         binding.btnSelectApps.text = getString(R.string.select_apps_count, selectedApps.size)
+                        binding.switchWhitelistMode.isChecked = group.isWhitelistMode
 
                         binding.btnDeleteGroup.visibility = View.VISIBLE
                         binding.btnDeleteGroup.setOnClickListener {
@@ -125,7 +133,9 @@ class CreateGrayscaleGroupFragment : Fragment() {
                 return@setOnClickListener
             }
             
-            if (selectedApps.isEmpty()) {
+            // A whitelist with no apps is allowed: everything is grayscale
+            val isWhitelistMode = binding.switchWhitelistMode.isChecked
+            if (!isWhitelistMode && selectedApps.isEmpty()) {
                 Toast.makeText(requireContext(), getString(R.string.please_select_at_least_one_app), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -138,7 +148,8 @@ class CreateGrayscaleGroupFragment : Fragment() {
                 groupId = if (isEditingRecord && targetExistingGroup != null) targetExistingGroup.groupId else UUID.randomUUID().toString(),
                 groupName = name,
                 packages = HashSet(selectedApps),
-                timeConfig = viewModel.currentTimeConfig
+                timeConfig = viewModel.currentTimeConfig,
+                isWhitelistMode = isWhitelistMode
             )
 
             binding.fabSaveGroup.isEnabled = false
