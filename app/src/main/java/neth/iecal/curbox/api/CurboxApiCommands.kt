@@ -269,7 +269,8 @@ object CurboxApiCommands {
                     "id" to g.groupId,
                     "name" to g.groupName,
                     "isActive" to g.isActive,
-                    "apps" to g.packages.size
+                    "apps" to g.packages.size,
+                    "allApps" to g.allApps
                 )
             }
 

@@ -42,7 +42,7 @@ class GrayScaleFilter : BaseBlocker() {
     private val scheduleChecker = object : Runnable {
         override fun run() {
             if (destroyed) return
-            recheckCurrentPackage()
+            refreshGrayscale()
             handler.postDelayed(this, 60_000L - System.currentTimeMillis() % 60_000L)
         }
     }
@@ -50,7 +50,13 @@ class GrayScaleFilter : BaseBlocker() {
     @Volatile
     private var grayscaleGroups: List<GrayscaleGroup> = emptyList()
 
+    // True while an "all apps" group is inside its schedule. Grayscale then stays on
+    // everywhere (launcher, system apps and Curbox included) and window changes are ignored.
+    @Volatile
+    private var allAppsActive = false
+
     fun doGrayscaleCheck(event: AccessibilityEvent?) {
+        if (allAppsActive) return
         if (event == null || (event.eventType and TARGET_EVENTS_MASK) == 0) return
 
         val currentPackageName = event.packageName?.toString() ?: return
@@ -73,38 +79,9 @@ class GrayScaleFilter : BaseBlocker() {
             return
         }
 
-        val now = Calendar.getInstance()
-        val calDay = now.get(Calendar.DAY_OF_WEEK)
-        // Monday=0, ..., Sunday=6 mapping (matches GrayscaleTimeSettingsFragment)
-        val currentDay = if (calDay == Calendar.SUNDAY) 6 else calDay - 2
-        val currentMinutes = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-
-        var shouldGrayscale = false
-
-        // Don't grayscale Curbox itself to ensure usability
-            for (group in grayscaleGroups) {
-                if (!group.isActive) continue
-
-                if (group.packages.contains(currentPackageName)) {
-                    val config = group.timeConfig
-                    val intervals = if (config.isEveryday) {
-                        config.everydayIntervals
-                    } else {
-                        config.dailyIntervals[currentDay]
-                    }
-
-                    if (intervals == null || intervals.isEmpty()) {
-                        shouldGrayscale = true
-                        break
-                    } else {
-                        val isInInterval = intervals.any { isWithinInterval(currentMinutes, it) }
-                        if (isInInterval) {
-                            shouldGrayscale = true
-                            break
-                        }
-                    }
-                }
-            }
+        val shouldGrayscale = grayscaleGroups.any {
+            it.isActive && it.appliesTo(currentPackageName) && isScheduledNow(it)
+        }
 
         if (shouldGrayscale) {
             Log.d("GrayScaleFilter", "Enabling monochrome for $currentPackageName")
@@ -112,6 +89,37 @@ class GrayScaleFilter : BaseBlocker() {
         } else {
             Log.d("GrayScaleFilter", "Disabling monochrome for $currentPackageName")
             grayscaleControl.disableGrayscale(service)
+        }
+    }
+
+    private fun isScheduledNow(group: GrayscaleGroup): Boolean {
+        val now = Calendar.getInstance()
+        val calDay = now.get(Calendar.DAY_OF_WEEK)
+        // Monday=0, ..., Sunday=6 mapping (matches GrayscaleTimeSettingsFragment)
+        val currentDay = if (calDay == Calendar.SUNDAY) 6 else calDay - 2
+        val currentMinutes = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+
+        val config = group.timeConfig
+        val intervals = if (config.isEveryday) {
+            config.everydayIntervals
+        } else {
+            config.dailyIntervals[currentDay]
+        }
+        // No intervals means the group applies all day
+        return intervals.isNullOrEmpty() || intervals.any { isWithinInterval(currentMinutes, it) }
+    }
+
+    private fun refreshGrayscale() {
+        if (destroyed) return
+        allAppsActive = grayscaleGroups.any { it.isActive && it.allApps && isScheduledNow(it) }
+        if (allAppsActive) {
+            // Checked once per minute, so grayscale also comes back if it was turned off by hand
+            if (!grayscaleControl.isGrayscaleEnabled(service)) {
+                Log.d("GrayScaleFilter", "Enabling monochrome for all apps")
+                grayscaleControl.enableGrayscale(service)
+            }
+        } else {
+            recheckCurrentPackage()
         }
     }
 
@@ -141,7 +149,7 @@ class GrayScaleFilter : BaseBlocker() {
                 grayscaleGroups = settings.grayscaleGroups
                 Log.d("GrayScaleFilter", "Grayscale Groups loaded: $grayscaleGroups")
                 
-                handler.post { recheckCurrentPackage() }
+                handler.post { refreshGrayscale() }
             }
         }
     }

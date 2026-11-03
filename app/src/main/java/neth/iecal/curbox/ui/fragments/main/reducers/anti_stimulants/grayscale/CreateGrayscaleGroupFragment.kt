@@ -66,6 +66,11 @@ class CreateGrayscaleGroupFragment : Fragment() {
         val groupId = requireActivity().intent.getStringExtra("group_id") ?: arguments?.getString("group_id")
         val prefillPackage = requireActivity().intent.getStringExtra("prefill_package")
 
+        // The app picker is not needed when the group covers every app
+        binding.switchAllApps.setOnCheckedChangeListener { _, isChecked ->
+            binding.btnSelectApps.visibility = if (isChecked) View.GONE else View.VISIBLE
+        }
+
         if (groupId == null && !isPrefilled && prefillPackage != null) {
             isPrefilled = true
             selectedApps = arrayListOf(prefillPackage)
@@ -92,6 +97,7 @@ class CreateGrayscaleGroupFragment : Fragment() {
                         binding.etGroupName.setText(group.groupName)
                         selectedApps = ArrayList(group.packages.toList())
                         binding.btnSelectApps.text = getString(R.string.select_apps_count, selectedApps.size)
+                        binding.switchAllApps.isChecked = group.allApps
 
                         binding.btnDeleteGroup.visibility = View.VISIBLE
                         binding.btnDeleteGroup.setOnClickListener {
@@ -125,7 +131,8 @@ class CreateGrayscaleGroupFragment : Fragment() {
                 return@setOnClickListener
             }
             
-            if (selectedApps.isEmpty()) {
+            val allApps = binding.switchAllApps.isChecked
+            if (!allApps && selectedApps.isEmpty()) {
                 Toast.makeText(requireContext(), getString(R.string.please_select_at_least_one_app), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -138,7 +145,8 @@ class CreateGrayscaleGroupFragment : Fragment() {
                 groupId = if (isEditingRecord && targetExistingGroup != null) targetExistingGroup.groupId else UUID.randomUUID().toString(),
                 groupName = name,
                 packages = HashSet(selectedApps),
-                timeConfig = viewModel.currentTimeConfig
+                timeConfig = viewModel.currentTimeConfig,
+                allApps = allApps
             )
 
             binding.fabSaveGroup.isEnabled = false

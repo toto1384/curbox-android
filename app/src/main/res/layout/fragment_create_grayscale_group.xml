@@ -75,6 +75,13 @@
                 android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switch_all_apps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="@string/grayscale_all_apps" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_select_apps"
                 android:layout_width="match_parent"

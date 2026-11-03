@@ -146,8 +146,9 @@ object RestrictionComparator {
     fun grayscaleGroups(old: List<GrayscaleGroup>, new: List<GrayscaleGroup>): Boolean {
         return old.filter { it.isActive }.all { o ->
             val n = new.find { it.groupId == o.groupId } ?: return@all false
+            // Turning "all apps" off loosens the group, even if apps stay selected
             n.isActive &&
-                n.packages.containsAll(o.packages) &&
+                (n.allApps || (!o.allApps && n.packages.containsAll(o.packages))) &&
                 grayscaleTimeCoverageSameOrWider(o.timeConfig, n.timeConfig)
         }
     }

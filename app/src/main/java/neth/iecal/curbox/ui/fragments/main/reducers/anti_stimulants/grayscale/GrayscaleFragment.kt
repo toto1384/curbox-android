@@ -125,7 +125,11 @@ class GrayscaleFragment : Fragment() {
             val group = groupList[position]
             holder.itemBinding.tvGroupName.text = group.groupName
             
-            holder.itemBinding.tvGroupDetails.text = getString(R.string.group_details_apps_only, group.packages.size)
+            holder.itemBinding.tvGroupDetails.text = if (group.allApps) {
+                getString(R.string.all_apps)
+            } else {
+                getString(R.string.group_details_apps_only, group.packages.size)
+            }
             
             holder.itemBinding.switchActive.setOnCheckedChangeListener(null)
             holder.itemBinding.switchActive.isChecked = group.isActive

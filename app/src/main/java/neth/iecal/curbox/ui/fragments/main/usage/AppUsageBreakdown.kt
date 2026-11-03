@@ -80,7 +80,7 @@ class AppUsageBreakdown(private val stat: AppUsageStat) : Fragment() {
                     )
                 }
 
-                val matchedGrayscale = settings.grayscaleGroups.filter { it.packages.contains(stat.packageName) }
+                val matchedGrayscale = settings.grayscaleGroups.filter { it.appliesTo(stat.packageName) }
                 matchedGrayscale.forEach { group ->
                     addShortcutCard(
                         title = group.groupName,

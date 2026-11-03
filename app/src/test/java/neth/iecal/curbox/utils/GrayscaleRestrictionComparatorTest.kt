@@ -38,7 +38,31 @@ class GrayscaleRestrictionComparatorTest {
         assertTrue(RestrictionComparator.grayscaleGroups(listOf(split), listOf(overnight)))
     }
 
+    @Test
+    fun turningAllAppsOnIsStricter() {
+        val someApps = appsGroup(allApps = false, "a", "b")
+        val allApps = appsGroup(allApps = true)
+        assertTrue(RestrictionComparator.grayscaleGroups(listOf(someApps), listOf(allApps)))
+    }
+
+    @Test
+    fun turningAllAppsOffIsLooserEvenWithAppsSelected() {
+        val allApps = appsGroup(allApps = true, "a", "b")
+        val someApps = appsGroup(allApps = false, "a", "b")
+        assertFalse(RestrictionComparator.grayscaleGroups(listOf(allApps), listOf(someApps)))
+    }
+
+    @Test
+    fun allAppsGroupAppliesToAnyPackage() {
+        assertTrue(appsGroup(allApps = true).appliesTo("com.example.any"))
+        assertFalse(appsGroup(allApps = false, "a").appliesTo("com.example.any"))
+    }
+
     private fun group(schedule: AppTimeConfig) = GrayscaleGroup(
         groupId = "group", isActive = true, timeConfig = schedule
+    )
+
+    private fun appsGroup(allApps: Boolean, vararg packages: String) = GrayscaleGroup(
+        groupId = "group", isActive = true, packages = hashSetOf(*packages), allApps = allApps
     )
 }
